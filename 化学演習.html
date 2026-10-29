@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>共通テスト化学基礎 演習マスター</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800">
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white shadow-md">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                🧪 共通テスト化学基礎 演習マスター
+            </h1>
+            <span id="header-stats" class="text-sm bg-indigo-700 px-3 py-1 rounded-full">習得度: -%</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-3xl mx-auto px-4 py-6">
+        <!-- View: Category Selection -->
+        <div id="view-select" class="space-y-6 fade-in">
+            <!-- Mode Switcher -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <span class="font-bold text-slate-700 text-sm">出題モード選択:</span>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button id="mode-5q" onclick="setMode(5)" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold bg-indigo-600 text-white shadow-sm transition">
+                        ⚡ ランダム 5 題
+                    </button>
+                    <button id="mode-all" onclick="setMode('ALL')" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                        📚 分野の全問題
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-lg font-bold mb-2 text-indigo-900">分野を選択してスタート</h2>
+                <p id="mode-description" class="text-slate-600 text-sm mb-4">選択した分野からランダムに5題が出題されます。スキマ時間の短時間演習に最適です。</p>
+                <div id="category-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Categories will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Overall Stats -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="font-bold text-slate-700 mb-3">全体の演習進捗状況</h3>
+                <div class="w-full bg-slate-200 rounded-full h-4 mb-2">
+                    <div id="overall-progress-bar" class="bg-indigo-600 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between text-sm text-slate-600">
+                    <span id="overall-score-text">一度でも正解した問題: 0 / 0</span>
+                    <button id="btn-reset" class="text-red-500 hover:text-red-700 underline text-xs">学習履歴をリセット</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Quiz Display -->
+        <div id="view-quiz" class="hidden space-y-6 fade-in">
+            <!-- Navigation Header -->
+            <div class="flex justify-between items-center">
+                <button id="btn-back" class="text-slate-600 hover:text-indigo-600 flex items-center gap-1 text-sm font-medium">
+                    ← 分野選択に戻る
+                </button>
+                <span id="quiz-progress" class="text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                    第 1 問 / 5 問
+                </span>
+            </div>
+
+            <!-- Card Question -->
+            <div class="bg-white rounded-xl shadow-md border border-slate-200 p-6">
+                <div class="mb-4">
+                    <span id="question-category" class="inline-block bg-slate-100 text-slate-600 text-xs px-2.5 py-1 rounded font-semibold mb-2">分野名</span>
+                    <h3 id="question-text" class="text-base md:text-lg font-bold text-slate-800 leading-relaxed">
+                        問題文がここに入ります。
+                    </h3>
+                </div>
+
+                <!-- Answer Options -->
+                <div id="options-container" class="space-y-3 my-6">
+                    <!-- Option buttons dynamically generated -->
+                </div>
+
+                <!-- Explanation Area (Hidden by default) -->
+                <div id="explanation-box" class="hidden mt-6 p-4 rounded-lg bg-slate-50 border border-slate-200 fade-in">
+                    <div id="result-badge" class="font-bold text-lg mb-2"></div>
+                    <div id="explanation-text" class="text-slate-700 text-sm leading-relaxed mb-4"></div>
+                    <button id="btn-next" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow transition">
+                        次の問題へ ➔
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Results -->
+        <div id="view-result" class="hidden text-center space-y-6 fade-in">
+            <div class="bg-white p-8 rounded-xl shadow-md border border-slate-200">
+                <div class="text-5xl mb-4">🎯</div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">演習完了！</h2>
+                <p class="text-slate-600 mb-6">お疲れ様でした。今回の結果です。</p>
+
+                <div class="text-4xl font-extrabold text-indigo-600 mb-6">
+                    <span id="final-score">0</span> <span class="text-lg font-normal text-slate-500">/ <span id="final-total">0</span> 正解</span>
+                </div>
+
+                <div class="flex justify-center gap-4">
+                    <button id="btn-retry" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow">
+                        もう一度（別問題ランダム）
+                    </button>
+                    <button id="btn-home" class="px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg">
+                        トップへ戻る
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Quiz Data & Logic -->
+    <script>
+        const quizData = [
+            // ==================== 1. 物質の構成と分類 ====================
+            {
+                id: 1,
+                category: "1. 物質の構成と分類",
+                question: "同素体の対（組み合わせ）に関する記述として【誤っているもの】を1つ選べ。",
+                options: [
+                    "黒鉛とダイヤモンドはともに炭素の同素体であり、黒鉛は電気を通すがダイヤモンドは通しにくい。",
+                    "斜方硫黄と単斜硫黄をそれぞれ二硫化炭素に溶かして再結晶させると、いずれも斜方硫黄が得られる。",
+                    "酸素とオゾンは同素体であり、オゾンは淡青色の気体で特有の臭気をもつ。",
+                    "赤リンと黄リンは同素体であり、黄リンは空気中で自然発火するため水中に保存する。"
+                ],
+                answer: 1,
+                explanation: "二硫化炭素に溶かして室温で蒸発させると斜方硫黄が得られますが、単斜硫黄を得るには高温で融解させた後にゆっくり冷却する必要があります。"
+            },
+            {
+                id: 2,
+                category: "1. 物質の構成と分類",
+                question: "純物質と混合物に関する記述として【正しいもの】を1つ選べ。",
+                options: [
+                    "空気、石油、ドライアイスはいずれも混合物である。",
+                    "混合物は融点や沸点が一定であるのに対し、純物質は組成によって変化する。",
+                    "塩酸は塩化水素ガスを水に溶かした水溶液であり、混合物に分類される。",
+                    "海水から純粋な水を得る操作（蒸留）は、化学変化を利用した分離法である。"
+                ],
+                answer: 2,
+                explanation: "塩酸は塩化水素(HCl)と水(H<sub>2</sub>O)の混合物です。ドライアイスは純物質(CO<sub>2</sub>)です。"
+            },
+            {
+                id: 3,
+                category: "1. 物質の構成と分類",
+                question: "混合物の分離操作に関する記述として【最も適当なもの】を1つ選べ。",
+                options: [
+                    "液体中に溶けている固体をろ過によって分離した。",
+                    "インクに含まれる数種類の色素を分離するために、再結晶を用いた。",
+                    "ヨウ素と塩化ナトリウムの混合物からヨウ素を取り出すために昇華法を用いた。",
+                    "沸点の異なる2種類の液体混合物を分離するために抽出を行った。"
+                ],
+                answer: 2,
+                explanation: "ヨウ素やナフタレンは昇華性を持つため、昇華法で分離できます。"
+            },
+            {
+                id: 4,
+                category: "1. 物質の構成と分類",
+                question: "熱運動と物質の三態に関する記述として【誤っているもの】を1つ選べ。",
+                options: [
+                    "絶対温度 0 K（約 -273℃）では、粒子の熱運動がほぼ停止する。",
+                    "気体の温度を上げると、気体分子の平均運動エネルギーは大きくなる。",
+                    "固体から液体への状態変化（融解）の最中は、加熱し続けても温度は一定に保たれる。",
+                    "沸騰している液体の温度が一定に保たれるのは、与えた熱量がすべて粒子の熱運動を激しくすることに使われるからである。"
+                ],
+                answer: 3,
+                explanation: "状態変化中に温度が一定なのは、熱量が「粒子間の結合を断ち切るため（潜熱）」に使われるからです。"
+            },
+            {
+                id: 5,
+                category: "1. 物質の構成と分類",
+                question: "炎色反応に関する記述として【誤っているもの】を1つ選べ。",
+                options: [
+                    "Li:赤、Na:黄、K:赤紫 などの元素に特有の発光現象である。",
+                    "カルシウム元素を含む化合物を白金線につけて無色の外炎に入れると、橙赤色の炎色反応を示す。",
+                    "塩化ナトリウム水溶液と硫酸ナトリウム水溶液は、炎色反応によって区別することができる。",
+                    "炎色反応は、主にアルカリ金属やアルカリ土類金属などの金属元素の検出に利用される。"
+                ],
+                answer: 2,
+                explanation: "どちらも Na<sup>+</sup> を含むため黄色の炎色反応を示し、区別できません。"
+            },
+            {
+                id: 6,
+                category: "1. 物質の構成と分類",
+                question: "原子構造と粒子に関する記述として【正しいもの】を1つ選べ。",
+                options: [
+                    "原子の質量数は、陽子の数と電子の数の和に等しい。",
+                    "原子番号 17 の塩素原子 (<sup>35</sup>Cl と <sup>37</sup>Cl) では、中性子の数が異なる。",
+                    "原子核の周りを回る電子は、最内殻である M 殻から順に収容される。",
+                    "原子が陽イオンになるとき、原子核内の陽子の数が増加する。"
+                ],
+                answer: 1,
+                explanation: "質量数は「陽子の数 ＋ 中性子の数」です。同位体(<sup>35</sup>Cl と <sup>37</sup>Cl)は中性子の数が異なります。"
+            },
+            {
+                id: 7,
+                category: "1. 物質の構成と分類",
+                question: "次のイオンのうち、ネオン(Ne)と同じ電子配置をもつものはどれか。",
+                options: ["K<sup>+</sup>", "Ca<sup>2+</sup>", "Cl<sup>-</sup>", "O<sup>2-</sup>"],
+                answer: 3,
+                explanation: "Neは電子数10。酸素(原子番号8)が電子を2個得た O<sup>2-</sup> も電子数10です。"
+            },
+            {
+                id: 8,
+                category: "1. 物質の構成と分類",
+                question: "周期表の周期と族に関する記述として【正しいもの】を1つ選べ。",
+                options: [
+                    "第2周期の元素は、すべて M 殻に価電子をもっている。",
+                    "17 族元素（ハロゲン）は、価電子を 7 個もち、1 価の陰イオンになりやすい。",
+                    "18 族元素（希ガス）は価電子を 8 個もち、化学的に非常に活性である。",
+                    "周期表の同周期の典型元素では、右に行くほど原子半径が大きくなる。"
+                ],
+                answer: 1,
+                explanation: "ハロゲン（17族）は価電子7個を持ち、1価の陰イオンになりやすいです。"
+            },
+            {
+                id: 9,
+                category: "1. 物質の構成と分類",
+                question: "元素の周期性（イオン化エネルギー・電子親和力）に関する記述として【正しいもの】を1つ選べ。",
+                options: [
+                    "第一イオン化エネルギーが最も大きい元素はアルカリ金属である。",
+                    "電子親和力が大きい原子ほど、電子を放出して陽イオンになりやすい。",
+                    "希ガス元素は第一イオン化エネルギーが極めて小さく、イオンになりやすい。",
+                    "第一イオン化エネルギーとは、気体状態の原子から電子 1 個を取り去って 1 価の陽イオンにするのに必要な最小エネルギーである。"
+                ],
+                answer: 3,
+                explanation: "第一イオン化エネルギーの正しい定義です。最も大きいのは希ガスです。"
+            },
+            {
+                id: 10,
+                category: "1. 物質の構成と分類",
+                question: "同位体と放射性同位体に関する記述として【誤っているもの】を1つ選べ。",
+                options: [
+                    "同位体同士は化学的性質がほぼ等しい。",
+                    "炭素の同位体 <sup>14</sup>C は放射線を放出して崩壊するため、年代測定に利用される。",
+                    "放射性同位体が崩壊して元の量の半分になるまでの時間を「半減期」と呼び、温度や圧力によって変化する。",
+                    "水素の同位体には、軽水素(<sup>1</sup>H)、重水素(<sup>2</sup>H)、三重水素(<sup>3</sup>H) が存在する。"
+                ],
+                answer: 2,
+                explanation: "半減期は原子核固有の性質であり、温度や圧力などの条件で変化しません。"
+            },
+            {
+                id: 11,
+                category: "1. 物質の構成と分類",
+                question: "状態変化と熱運動に関する説明として【最も適当なもの】を1つ選べ。",
+                options: [
+                    "昇華とは、気体が直接液体になる変化のことである。",
+                    "沸騰は液体の表面だけで蒸発が起こる現象である。",
+                    "凝縮は気体が熱エネルギーを放出して液体になる現象である。",
+                    "蒸発は一定の沸点に達しないと起こらない。"
+                ],
+                answer: 2,
+                explanation: "凝縮は気体が熱を放出して液体になる物理変化です。表面からの蒸発は沸点以下の温度でも起こります。"
+            },
+            {
+                id: 12,
+                category: "1. 物質の構成と分類",
+                question: "原子の構成粒子に関する記述として【正しいもの】を1つ選べ。",
+                options: [
+                    "陽子と中性子の質量はほぼ等しく、電子の質量はそれらの約1/1840である。",
+                    "中性子は正の電荷をもっている。",
+                    "原子番号は原子に含まれる中性子の数を表す。",
+                    "中性原子では、陽子の数と中性子の数が常に等しい。"
+                ],
+                answer: 0,
+                explanation: "陽子と中性子の質量はほぼ等しく、電子の質量は極めて小さいため無視できます。"
+            },
+
+            // ==================== 2. 化学結合と結晶構造 ====================
+            {
+                id: 13,
+                category: "2. 化学結合と結晶構造",
+                question: "イオン結晶に関する記述として【最も適当なもの】を1つ選べ。",
+                options: [
+                    "固体の状態でも電気をよく通す。",
+                    "一般に硬いが、強い衝撃を与えると一定の面に沿って割れやすい（劈開性）。",
+                    "構成粒子が分子間力で結合しているため、融点が非常に低い。",
+                    "水などの極性溶媒にはまったく溶けない。"
+                ],
+                answer: 1,
+                explanation: "イオン結晶は衝撃を受けると同一電荷同士が向き合い反発して割れます（劈開）。"
+            },
+            {
+                id: 14,
+                category: "2. 化学結合と結晶構造",
+                question: "次の分子のうち、分子全体として【無極性分子】であるものはどれか。",
+                options: ["H<sub>2</sub>O", "NH<sub>3</sub>", "CO<sub>2</sub>", "HCl"],
+                answer: 2,
+                explanation: "CO<sub>2</sub> は直線型のため、結合の極性が互いに打ち消し合い無極性分子となります。"
+            },
+            {
+                id: 15,
+                category: "2. 化学結合と結晶構造",
+                question: "共有結合の結晶（原子結晶）に分類される物質の組み合わせとして【正しいもの】を1つ選べ。",
+                options: [
+                    "ダイヤモンド(C)、二酸化ケイ素(SiO<sub>2</sub>)、ケイ素(Si)",
+                    "ドライアイス(CO<sub>2</sub>)、ヨウ素(I<sub>2</sub>)、ナフタレン",
+                    "塩化ナトリウム(NaCl)、酸化カルシウム(CaO)",
+                    "銅(Cu)、鉄(Fe)、アルミニウム(Al)"
+                ],
+                answer: 0,
+                explanation: "ダイヤモンド、二酸化ケイ素(SiO<sub>2</sub>)、ケイ素(Si)は硬く高融点な共有結合の結晶です。"
+            },
+            {
+                id: 16,
+                category: "2. 化学結合と結晶構造",
+                question: "配位結合に関する記述として【誤っているもの】を1つ選べ。",
+                options: [
+                    "アンモニア(NH<sub>3</sub>) の非共有電子対に、H<sup>+</sup> が結合してアンモニウムイオン(NH<sub>4</sub><sup>+</sup>) が形成される。",
+                    "配位結合が形成された後、完成した4つの N-H 結合は共有結合とまったく区別がつかない。",
+                    "錯イオン [Cu(NH<sub>3</sub>)<sub>4</sub>]<sup>2+</sup> において、アンモニア分子は配位子として銅イオンに配位結合している。",
+                    "配位結合は、共有結合に比べて結合力が極めて弱く、すぐに切れてしまう。"
+                ],
+                answer: 3,
+                explanation: "形成された配位結合は、通常の共有結合と全く同じ強度・性質を持ちます。"
+            },
+            {
+                id: 17,
+                category: "2. 化学結合と結晶構造",
+                question: "分子間力（ファンデルワールス力・水素結合）に関する記述として【正しいもの】を1つ選べ。",
+                options: [
+                    "ファンデルワールス力は、分子量が大きくなるほど弱くなる傾向がある。",
+                    "水(H<sub>2</sub>O) の沸点が同族元素の水化物(H<sub>2</sub>Sなど) と比べて異常に高いのは、分子間に水素結合が働くからである。",
+                    "水素結合は、H 原子が C や Na などの電荷の小さい原子と直結しているときに強く働く。",
+                    "水素結合の結合の強さは、共有結合やイオン結合よりも強い。"
+                ],
+                answer: 1,
+                explanation: "F, O, N に直結した H 原子の存在により強い水素結合が働き、水の沸点は高くなります。"
+            },
+            {
+                id: 18,
+                category: "2. 化学結合と結晶構造",
+                question: "金属結合と金属の性質に関する記述として【誤っているもの】を1つ選べ。",
+                options: [
+                    "金属結晶は、自由電子が金属陽イオン同士を引きつけることによって形成される。",
+                    "金属は叩くと薄く広がる「展性」や、引っ張ると細く伸びる「延性」をもつ。",
+                    "金属は熱伝導性や電気伝導性に優れており、これは自由電子が移動できるためである。",
+                    "すべての金属はイオン結晶や共有結合の結晶に比べて融点が著しく低い。"
+                ],
+                answer: 3,
+                explanation: "金属の融点は水銀のように低いものから、タングステンのように3000℃を超えるものまで様々です。"
+            },
+            {
+                id: 19,
+                category: "2. 化学結合と結晶構造",
+                question: "電気陰性度に関する記述として【最も適当なもの】を1つ選べ。",
+                options: [
+                    "電気陰性度とは、原子が陽イオンになろうとする強さを表す尺度である。",
+                    "周期表の中で、電気陰性度が最も大きい元素はフッ素(F) である。",
+                    "2原子間の電気陰性度の差が小さいほど、その結合はイオン結合性が強くなる。",
+                    "希ガス元素は、極めて大きな電気陰性度の値をもっている。"
+                ],
+                answer: 1,
+                explanation: "電気陰性度は共有電子対を引きつける強さの尺度であり、最大はフッ素(F)です。"
+            },
+            {
+                id: 20,
+                category: "2. 化学結合と結晶構造",
+                question: "化学結合の種類と結晶の性質に関する組み合わせとして【誤っているもの】を1つ選べ。",
+                options: [
+                    "塩化ナトリウム(NaCl) ── 水溶液は電気を通す",
+                    "二酸化ケイ素(SiO<sub>2</sub>) ── 硬く、融点が極めて高い",
+                    "氷(H<sub>2</sub>O) ── 水素結合をもち、結晶化すると体積が減少（密度が増加）する",
+                    "銅(Cu) ── 自由電子により特有の金属光沢をもつ"
+                ],
+                answer: 2,
+                explanation: "氷は隙間の多い構造を作るため、液体（水）よりも体積が増加（密度が減少）します。"
+            },
+            {
+                id: 21,
+                category: "2. 化学結合と結晶構造",
+                question: "窒素分子(N<sub>2</sub>) の電子式・結合に関する記述として【正しいもの】を選べ。",
+                options: [
+                    "1対の共有電子対をもつ単結合である。",
+                    "2対の共有電子対をもつ二重結合である。",
+                    "3対の共有電子対をもつ三重結合である。",
+                    "非共有電子対は存在しない。"
+                ],
+                answer: 2,
+                explanation: "窒素原子同士は 3組の不対電子を出し合って三重結合（共有電子対3対）を形成します。"
+            },
+            {
+                id: 22,
+                category: "2. 化学結合と結晶構造",
+                question: "次の物質のうち、分子結晶に該当する組み合わせとして正しいものを選べ。",
+                options: [
+                    "ヨウ素(I<sub>2</sub>)、ドライアイス(CO<sub>2</sub>)、ショ糖",
+                    "塩化ナトリウム(NaCl)、二酸化ケイ素(SiO<sub>2</sub>)、鉄(Fe)",
+                    "ダイヤモンド(C)、水(H<sub>2</sub>O)、アンモニア(NH<sub>3</sub>)",
+                    "銅(Cu)、亜鉛(Zn)、アルミニウム(Al)"
+                ],
+                answer: 0,
+                explanation: "ヨウ素、ドライアイス、ショ糖はすべて分子間力によってできる分子結晶です。"
+            },
+
+            // ==================== 3. 物質量と化学反応式 ====================
+            {
+                id: 23,
+                category: "3. 物質量と化学反応式",
+                question: "メタン(CH<sub>4</sub>: 分子量16) 3.2 g に含まれる水素原子(H) の物質量(mol) はいくらか。",
+                options: ["0.20 mol", "0.40 mol", "0.80 mol", "1.6 mol"],
+                answer: 2,
+                explanation: "メタンは 3.2 ÷ 16 = 0.20 mol。H原子は 0.20 × 4 = 0.80 mol です。"
+            },
+            {
+                id: 24,
+                category: "3. 物質量と化学反応式",
+                question: "標準状態において、ある気体 5.6 L の質量が 11 g であった。この気体の分子量はいくらか。",
+                options: ["28", "32", "44", "64"],
+                answer: 2,
+                explanation: "5.6 L は 0.25 mol。1 mol あたりの質量は 11g ÷ 0.25 mol = 44 です。"
+            },
+            {
+                id: 25,
+                category: "3. 物質量と化学反応式",
+                question: "グルコース(分子量180) 18 g を水に溶かして 500 mL にした水溶液のモル濃度(mol/L) はいくらか。",
+                options: ["0.10 mol/L", "0.20 mol/L", "0.50 mol/L", "1.0 mol/L"],
+                answer: 1,
+                explanation: "グルコース 18g は 0.10 mol。500 mL = 0.50 L。濃度は 0.10 ÷ 0.50 = 0.20 mol/L。"
+            },
+            {
+                id: 26,
+                category: "3. 物質量と化学反応式",
+                question: "プロパン C<sub>3</sub>H<sub>8</sub> の完全燃焼反応式 (a C<sub>3</sub>H<sub>8</sub> + b O<sub>2</sub> → c CO<sub>2</sub> + d H<sub>2</sub>O) の係数比 a : b : c : d はいくらか。",
+                options: ["1 : 3 : 3 : 4", "1 : 5 : 3 : 4", "2 : 5 : 6 : 8", "1 : 4 : 3 : 4"],
+                answer: 1,
+                explanation: "係数を合わせると 1 C<sub>3</sub>H<sub>8</sub> + 5 O<sub>2</sub> → 3 CO<sub>2</sub> + 4 H<sub>2</sub>O となります。"
+            },
+            {
+                id: 27,
+                category: "3. 物質量と化学反応式",
+                question: "アルミニウム(Al: 原子量27) 5.4 g を十分な量の塩酸と反応させたとき発生する水素(H<sub>2</sub>) の標準状態での体積はいくらか。(2Al + 6HCl → 2AlCl<sub>3</sub> + 3H<sub>2</sub>)",
+                options: ["2.24 L", "4.48 L", "6.72 L", "13.44 L"],
+                answer: 2,
+                explanation: "Al は 0.20 mol。発生する H<sub>2</sub> は 0.20 × (3/2) = 0.30 mol。体積は 0.30 × 22.4 = 6.72 L。"
+            },
+            {
+                id: 28,
+                category: "3. 物質量と化学反応式",
+                question: "10% の塩化ナトリウム水溶液 200 g に、さらに 50 g の水を加えた。希釈後の質量パーセント濃度は何 % か。",
+                options: ["4.0 %", "6.0 %", "8.0 %", "9.0 %"],
+                answer: 2,
+                explanation: "溶質の塩は 20g。溶液全体は 250g。濃度は (20 ÷ 250) × 100 = 8.0% です。"
+            },
+            {
+                id: 29,
+                category: "3. 物質量と化学反応式",
+                question: "銅の原子量を 63.5 とする。<sup>63</sup>Cu (相対質量63.0) と <sup>65</sup>Cu (相対質量65.0) のうち、<sup>63</sup>Cu の存在比率(%) はいくらか。",
+                options: ["25 %", "50 %", "75 %", "80 %"],
+                answer: 2,
+                explanation: "63.0 × (x/100) + 65.0 × ((100-x)/100) = 63.5 を解くと x = 75% となります。"
+            },
+            {
+                id: 30,
+                category: "3. 物質量と化学反応式",
+                question: "空気を N<sub>2</sub>(分子量28) と O<sub>2</sub>(分子量32) の体積比 4 : 1 の混合気体としたとき、空気の平均分子量はいくらか。",
+                options: ["28.8", "29.6", "30.0", "31.2"],
+                answer: 0,
+                explanation: "平均分子量は 28 × (4/5) + 32 × (1/5) = 28.8 です。"
+            },
+            {
+                id: 31,
+                category: "3. 物質量と化学反応式",
+                question: "炭酸カルシウム(CaCO<sub>3</sub>: 式量100) 10 g に十分な塩酸を加えたとき、発生する CO<sub>2</sub>(分子量44) の質量は何 g か。",
+                options: ["2.2 g", "4.4 g", "8.8 g", "11.0 g"],
+                answer: 1,
+                explanation: "CaCO<sub>3</sub> 10g は 0.10 mol。発生する CO<sub>2</sub> も 0.10 mol で質量は 0.10 × 44 = 4.4 g。"
+            },
+            {
+                id: 32,
+                category: "3. 物質量と化学反応式",
+                question: "水(H<sub>2</sub>O) 9.0 g に含まれる【全電子の数】として正しいものはどれか。(アボガドロ定数 6.0 × 10<sup>23</sup> /mol)",
+                options: ["3.0 × 10<sup>23</sup> 個", "6.0 × 10<sup>23</sup> 個", "3.0 × 10<sup>24</sup> 個", "6.0 × 10<sup>24</sup> 個"],
+                answer: 2,
+                explanation: "水 9.0g は 0.50 mol。H<sub>2</sub>O 1分子に電子10個があるので、全電子数は 0.50 × 10 × 6.0 × 10<sup>23</sup> = 3.0 × 10<sup>24</sup> 個。"
+            },
+            {
+                id: 33,
+                category: "3. 物質量と化学反応式",
+                question: "標準状態における酸素分子 O<sub>2</sub> 11.2 L に含まれる酸素原子の数は何個か。(アボガドロ定数 6.0 × 10<sup>23</sup> /mol)",
+                options: ["3.0 × 10<sup>23</sup> 個", "6.0 × 10<sup>23</sup> 個", "1.2 × 10<sup>24</sup> 個", "2.4 × 10<sup>24</sup> 個"],
+                answer: 1,
+                explanation: "O<sub>2</sub> 分子は 11.2 ÷ 22.4 = 0.50 mol。O 原子は 0.50 × 2 = 1.0 mol なので 6.0 × 10<sup>23</sup> 個です。"
+            },
+
+            // ==================== 4. 酸・塩基と酸化還元 ====================
+            {
+                id: 34,
+                category: "4. 酸・塩基と酸化還元",
+                question: "ブレンステッド・ローリーの定義における「酸・塩基」の説明として正しいものを1つ選べ。",
+                options: [
+                    "酸とは、水溶液中で水酸化物イオンを放出する物質である。",
+                    "反応 NH<sub>3</sub> + H<sub>2</sub>O ⇄ NH<sub>4</sub><sup>+</sup> + OH<sup>-</sup> において、H<sub>2</sub>O は酸として働いている。",
+                    "塩基とは、相手から水酸基を受け取る物質である。",
+                    "ブレンステッドの定義は、水溶液以外の反応には適用できない。"
+                ],
+                answer: 1,
+                explanation: "ブレンステッドの定義では H<sup>+</sup> を与えるものが酸です。H<sub>2</sub>O は NH<sub>3</sub> に H<sup>+</sup> を与えているため酸です。"
+            },
+            {
+                id: 35,
+                category: "4. 酸・塩基と酸化還元",
+                question: "0.0050 mol/L の硫酸水溶液 H<sub>2</sub>SO<sub>4</sub> の pH はいくらか。（電離度は 1.0 とする）",
+                options: ["1", "2", "3", "4"],
+                answer: 1,
+                explanation: "硫酸は2価の酸。[H<sup>+</sup>] = 2 × 0.0050 × 1.0 = 0.010 = 10<sup>-2</sup> mol/L より pH = 2。"
+            },
+            {
+                id: 36,
+                category: "4. 酸・塩基と酸化還元",
+                question: "0.10 mol/L の酢酸水溶液（電離度 0.010）の pH はいくらか。",
+                options: ["1", "2", "3", "4"],
+                answer: 2,
+                explanation: "[H<sup>+</sup>] = 1 × 0.10 × 0.010 = 10<sup>-3</sup> mol/L より pH = 3。"
+            },
+            {
+                id: 37,
+                category: "4. 酸・塩基と酸化還元",
+                question: "中和滴定の実験操作に関する記述として【誤っているもの】を1つ選べ。",
+                options: [
+                    "シュウ酸標準溶液をはかり取るホールピペットの内部を純水で濡れたまま使用した。",
+                    "ビュレットの内部は、使用する滴定液で共洗いしてから使用した。",
+                    "コニカルビーカーは水滴が残ったまま滴定に用いた。",
+                    "メスフラスコは内部が濡れたまま試料を溶かして使用した。"
+                ],
+                answer: 0,
+                explanation: "ホールピペットやビュレットは濃度変化を防ぐため、使用する溶液で「共洗い」する必要があります。"
+            },
+            {
+                id: 38,
+                category: "4. 酸・塩基と酸化還元",
+                question: "塩の分類（正塩・酸性塩・塩基性塩）とその水溶液の性質に関する記述として【正しいもの】を1つ選べ。",
+                options: [
+                    "塩化アンモニウム(NH<sub>4</sub>Cl) は正塩であり、水溶液は中性を示す。",
+                    "炭酸水素ナトリウム(NaHCO<sub>3</sub>) は酸性塩であり、水溶液は弱塩基性を示す。",
+                    "酢酸ナトリウム(CH<sub>3</sub>COONa) は酸性塩であり、水溶液は弱酸性を示す。",
+                    "硫酸ナトリウム(Na<sub>2</sub>SO<sub>4</sub>) の水溶液は、強アルカリ性を示す。"
+                ],
+                answer: 1,
+                explanation: "NaHCO<sub>3</sub> は H が残るため酸性塩ですが、水溶液は加水分解により「弱塩基性」を示します。"
+            },
+            {
+                id: 39,
+                category: "4. 酸・塩基と酸化還元",
+                question: "次の化合物の指定された原子の「酸化数」として【誤っているもの】を1つ選べ。",
+                options: [
+                    "KMnO<sub>4</sub> の Mn ── +7",
+                    "K<sub>2</sub>Cr<sub>2</sub>O<sub>7</sub> の Cr ── +6",
+                    "Fe<sub>2</sub>O<sub>3</sub> の Fe ── +3",
+                    "H<sub>2</sub>O<sub>2</sub> の O ── -2"
+                ],
+                answer: 3,
+                explanation: "過酸化水素 H<sub>2</sub>O<sub>2</sub> における O の酸化数は例外的に -1 です。"
+            },
+            {
+                id: 40,
+                category: "4. 酸・塩基と酸化還元",
+                question: "酸化還元反応に関する記述として【正しいもの】を1つ選べ。",
+                options: [
+                    "還元剤とは、相手の物質を還元し、自身は還元される物質である。",
+                    "反応 2H<sub>2</sub>S + SO<sub>2</sub> → 3S + 2H<sub>2</sub>O において、SO<sub>2</sub> は還元剤として働いている。",
+                    "過酸化水素 H<sub>2</sub>O<sub>2</sub> は、反応する相手によって酸化剤にも還元剤にもなり得る。",
+                    "金属のイオン化傾向が大きい金属ほど、電子を受け取って還元されやすい。"
+                ],
+                answer: 2,
+                explanation: "H<sub>2</sub>O<sub>2</sub> は強酸化剤に対しては還元剤として働き、通常の相手には酸化剤として働きます。"
+            },
+            {
+                id: 41,
+                category: "4. 酸・塩基と酸化還元",
+                question: "金属のイオン化傾向（Na > Mg > Zn > Fe > Cu > Ag）に関する記述として【最も適当なもの】を1つ選べ。",
+                options: [
+                    "硝酸銀(AgNO<sub>3</sub>) 水溶液に銅線を入れると、銀が析出する。",
+                    "鉄(Fe) は常温の冷水と激しく反応して水素を発生する。",
+                    "銅(Cu) は稀塩酸に溶けて水素を発生する。",
+                    "マグネシウム(Mg) は濃硝酸にしか溶けない。"
+                ],
+                answer: 0,
+                explanation: "Cu は Ag よりもイオン化傾向が大きいため、Cu が溶けて銀(Ag) が析出します。"
+            },
+            {
+                id: 42,
+                category: "4. 酸・塩基と酸化還元",
+                question: "金属の不動態に関する記述として正しいものを1つ選べ。",
+                options: [
+                    "アルミニウムや鉄に濃硝酸を加えると、表面に緻密な酸化被膜が形成され溶けなくなる現象。",
+                    "金属が湿った空気中で急速に腐食して錆びていく現象。",
+                    "イオン化傾向の小さな金属が王水にしか溶けない現象。",
+                    "金属結晶に外力を加えても変形しにくくなる処理のこと。"
+                ],
+                answer: 0,
+                explanation: "Al、Fe、Ni などは濃硝酸によって緻密な酸化被膜（不動態）を作り溶けなくなります。"
+            },
+            {
+                id: 43,
+                category: "4. 酸・塩基と酸化還元",
+                question: "過酸化水素水 10 mL を 0.020 mol/L の過マンガン酸カリウム水溶液で滴定したところ 15 mL 要した。過酸化水素水のモル濃度はいくらか。(反応比 MnO<sub>4</sub><sup>-</sup> : H<sub>2</sub>O<sub>2</sub> = 2 : 5)",
+                options: ["0.030 mol/L", "0.075 mol/L", "0.15 mol/L", "0.30 mol/L"],
+                answer: 1,
+                explanation: "KMnO<sub>4</sub> は 0.0003 mol。H<sub>2</sub>O<sub>2</sub> はその 2.5倍の 0.00075 mol。10 mL 中に含まれるため濃度は 0.075 mol/L です。"
+            },
+            {
+                id: 44,
+                category: "4. 酸・塩基と酸化還元",
+                question: "0.10 mol/L の水酸化ナトリウム水溶液 20 mL を完全に中和するのに必要な 0.050 mol/L の硫酸水溶液は何 mL か。",
+                options: ["10 mL", "20 mL", "40 mL", "50 mL"],
+                answer: 0,
+                explanation: "中和の公式 1 × 0.10 × 20 = 2 × 0.050 × V より、V = 10 mL と求まります。"
+            }
+        ];
+
+        // --- State Management ---
+        let playMode = 5; // 5 or 'ALL'
+        let currentCategory = "ALL";
+        let activeQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+        let userProgress = JSON.parse(localStorage.getItem("chem_quiz_progress_v5") || "{}");
+
+        // --- DOM Elements ---
+        const viewSelect = document.getElementById("view-select");
+        const viewQuiz = document.getElementById("view-quiz");
+        const viewResult = document.getElementById("view-result");
+
+        const categoryList = document.getElementById("category-list");
+        const overallProgressBar = document.getElementById("overall-progress-bar");
+        const overallScoreText = document.getElementById("overall-score-text");
+        const headerStats = document.getElementById("header-stats");
+
+        const questionCategory = document.getElementById("question-category");
+        const questionText = document.getElementById("question-text");
+        const optionsContainer = document.getElementById("options-container");
+        const quizProgress = document.getElementById("quiz-progress");
+        const explanationBox = document.getElementById("explanation-box");
+        const resultBadge = document.getElementById("result-badge");
+        const explanationText = document.getElementById("explanation-text");
+
+        // --- Functions ---
+        function init() {
+            renderCategories();
+            updateOverallProgress();
+
+            document.getElementById("btn-back").addEventListener("click", showCategorySelect);
+            document.getElementById("btn-next").addEventListener("click", nextQuestion);
+            document.getElementById("btn-retry").addEventListener("click", startQuiz);
+            document.getElementById("btn-home").addEventListener("click", showCategorySelect);
+            document.getElementById("btn-reset").addEventListener("click", resetProgress);
+        }
+
+        function setMode(mode) {
+            playMode = mode;
+            const btn5q = document.getElementById("mode-5q");
+            const btnAll = document.getElementById("mode-all");
+            const desc = document.getElementById("mode-description");
+
+            if (mode === 5) {
+                btn5q.className = "flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold bg-indigo-600 text-white shadow-sm transition";
+                btnAll.className = "flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+                desc.innerText = "選択した分野からランダムに5題が出題されます。スキマ時間の短時間演習に最適です。";
+            } else {
+                btnAll.className = "flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold bg-indigo-600 text-white shadow-sm transition";
+                btn5q.className = "flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition";
+                desc.innerText = "選択した分野に含まれるすべての問題を順に演習します。";
+            }
+        }
+
+        function renderCategories() {
+            const categories = ["ALL", ...new Set(quizData.map(q => q.category))];
+            categoryList.innerHTML = "";
+
+            categories.forEach(cat => {
+                const count = cat === "ALL" 
+                    ? quizData.length 
+                    : quizData.filter(q => q.category === cat).length;
+                
+                const btn = document.createElement("button");
+                btn.className = "p-4 border border-slate-200 rounded-xl text-left hover:border-indigo-500 hover:bg-indigo-50 transition flex justify-between items-center group bg-slate-50 shadow-sm";
+                btn.onclick = () => selectCategory(cat);
+
+                const label = cat === "ALL" ? "全範囲総合問題" : cat;
+
+                btn.innerHTML = `
+                    <div>
+                        <div class="font-bold text-slate-800 group-hover:text-indigo-600">${label}</div>
+                        <div class="text-xs text-slate-500 mt-1">収録数: ${count} 題</div>
+                    </div>
+                    <span class="text-indigo-600 font-bold text-sm opacity-0 group-hover:opacity-100 transition">演習 ➔</span>
+                `;
+                categoryList.appendChild(btn);
+            });
+        }
+
+        function updateOverallProgress() {
+            const total = quizData.length;
+            const solved = Object.keys(userProgress).length;
+            const percentage = total > 0 ? Math.round((solved / total) * 100) : 0;
+
+            overallProgressBar.style.width = `${percentage}%`;
+            overallScoreText.innerText = `一度でも正解した問題: ${solved} / ${total}`;
+            headerStats.innerText = `習得度: ${percentage}%`;
+        }
+
+        function selectCategory(cat) {
+            currentCategory = cat;
+            startQuiz();
+        }
+
+        function startQuiz() {
+            let pool = [];
+            if (currentCategory === "ALL") {
+                pool = [...quizData];
+            } else {
+                pool = quizData.filter(q => q.category === currentCategory);
+            }
+
+            // Shuffle pool
+            pool = pool.sort(() => Math.random() - 0.5);
+
+            // Apply Mode limit
+            if (playMode === 5) {
+                activeQuestions = pool.slice(0, 5);
+            } else {
+                activeQuestions = pool;
+            }
+
+            currentIndex = 0;
+            score = 0;
+
+            viewSelect.classList.add("hidden");
+            viewResult.classList.add("hidden");
+            viewQuiz.classList.remove("hidden");
+
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            const q = activeQuestions[currentIndex];
+
+            questionCategory.innerText = q.category;
+            questionText.innerHTML = q.question;
+            quizProgress.innerText = `第 ${currentIndex + 1} 問 / ${activeQuestions.length} 問`;
+
+            explanationBox.classList.add("hidden");
+            optionsContainer.innerHTML = "";
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement("button");
+                btn.className = "w-full text-left p-4 rounded-lg border border-slate-200 hover:bg-indigo-50 hover:border-indigo-300 font-medium text-slate-700 transition flex items-center justify-between text-sm md:text-base";
+                btn.innerHTML = `<span>${idx + 1}. ${opt}</span>`;
+                btn.onclick = () => checkAnswer(idx);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedIndex) {
+            const q = activeQuestions[currentIndex];
+            const isCorrect = selectedIndex === q.answer;
+
+            if (isCorrect) {
+                userProgress[q.id] = true;
+                localStorage.setItem("chem_quiz_progress_v5", JSON.stringify(userProgress));
+                updateOverallProgress();
+            }
+
+            const buttons = optionsContainer.querySelectorAll("button");
+            buttons.forEach((btn, idx) => {
+                btn.disabled = true;
+                if (idx === q.answer) {
+                    btn.classList.add("bg-emerald-100", "border-emerald-500", "text-emerald-900", "font-bold");
+                } else if (idx === selectedIndex) {
+                    btn.classList.add("bg-rose-100", "border-rose-500", "text-rose-900");
+                } else {
+                    btn.classList.add("opacity-50");
+                }
+            });
+
+            if (isCorrect) {
+                score++;
+                resultBadge.className = "font-bold text-lg mb-2 text-emerald-600";
+                resultBadge.innerText = "⭕ 正解！";
+            } else {
+                resultBadge.className = "font-bold text-lg mb-2 text-rose-600";
+                resultBadge.innerText = "❌ 不正解...";
+            }
+
+            explanationText.innerHTML = q.explanation;
+            explanationBox.classList.remove("hidden");
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < activeQuestions.length) {
+                displayQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            viewQuiz.classList.add("hidden");
+            viewResult.classList.remove("hidden");
+
+            document.getElementById("final-score").innerText = score;
+            document.getElementById("final-total").innerText = activeQuestions.length;
+        }
+
+        function showCategorySelect() {
+            viewQuiz.classList.add("hidden");
+            viewResult.classList.add("hidden");
+            viewSelect.classList.remove("hidden");
+        }
+
+        function resetProgress() {
+            if (confirm("これまでの解答履歴をリセットしますか？")) {
+                localStorage.removeItem("chem_quiz_progress_v5");
+                userProgress = {};
+                updateOverallProgress();
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
